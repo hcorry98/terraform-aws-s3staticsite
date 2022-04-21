@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "aws" {
-  region  = "us-west-2"
+  region = "us-west-2"
 }
 
 # Note: Typically you would want to use a more human friendly URL for a website,
@@ -24,7 +24,7 @@ data "aws_route53_zone" "myotherapp" {
 }
 
 module "s3_site" {
-  source         = "github.com/byu-oit/terraform-aws-s3staticsite?ref=v6.1.0"
+  source = "github.com/byu-oit/terraform-aws-s3staticsite?ref=v6.1.0"
   //source         = "../../"
   //site_url       = "myapp.byu.edu"
   site_url       = "myapp.byu-oit-terraform-dev.amazon.byu.edu"
