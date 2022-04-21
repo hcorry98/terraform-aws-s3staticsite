@@ -21,6 +21,12 @@ variable "site_url" {
   description = "The URL for the site."
 }
 
+variable "additional_domains" {
+  type        = list(object({ domain = string, hosted_zone_id = string }))
+  default     = []
+  description = "Additional domains to route to this site, and the associated hosted zones for cert validation."
+}
+
 variable "wait_for_deployment" {
   type        = bool
   description = "Define if Terraform should wait for the distribution to deploy before completing."
