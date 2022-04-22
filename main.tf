@@ -18,10 +18,11 @@ provider "aws" {
 }
 
 resource "aws_acm_certificate" "cert" {
-  provider          = aws.aws_n_va
-  domain_name       = var.site_url
-  validation_method = "DNS"
-  tags              = var.tags
+  provider                  = aws.aws_n_va
+  domain_name               = var.site_url
+  subject_alternative_names = [for domain in var.additional_domains : domain.domain]
+  validation_method         = "DNS"
+  tags                      = var.tags
 }
 
 resource "aws_acm_certificate_validation" "cert" {
@@ -38,11 +39,10 @@ resource "aws_route53_record" "cert_validation" {
       type   = dvo.resource_record_type
     }
   }
-
   provider = aws.aws_n_va
   name     = each.value.name
   type     = each.value.type
-  zone_id  = var.hosted_zone_id
+  zone_id  = (each.key == var.site_url) ? var.hosted_zone_id : var.additional_domains[index(var.additional_domains.*.domain, each.key)].hosted_zone_id
   records  = [each.value.record]
   ttl      = 60
 }
@@ -76,7 +76,7 @@ resource "aws_cloudfront_distribution" "cdn" {
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = var.index_doc
-  aliases             = [var.site_url]
+  aliases             = concat([var.site_url], [for domain in var.additional_domains : domain.domain])
   web_acl_id          = var.waf_acl_arn
 
   logging_config {
@@ -130,6 +130,36 @@ resource "aws_route53_record" "custom_url_4a" {
   name    = var.site_url
   type    = "AAAA"
   zone_id = var.hosted_zone_id
+
+  alias {
+    evaluate_target_health = false
+    name                   = aws_cloudfront_distribution.cdn.domain_name
+    zone_id                = aws_cloudfront_distribution.cdn.hosted_zone_id
+  }
+}
+
+resource "aws_route53_record" "additional_a" {
+  for_each = {
+    for domain in var.additional_domains : domain.domain => domain.hosted_zone_id
+  }
+  name    = each.key
+  type    = "A"
+  zone_id = each.value
+
+  alias {
+    evaluate_target_health = false
+    name                   = aws_cloudfront_distribution.cdn.domain_name
+    zone_id                = aws_cloudfront_distribution.cdn.hosted_zone_id
+  }
+}
+
+resource "aws_route53_record" "additional_4a" {
+  for_each = {
+    for domain in var.additional_domains : domain.domain => domain.hosted_zone_id
+  }
+  name    = each.key
+  type    = "AAAA"
+  zone_id = each.value
 
   alias {
     evaluate_target_health = false
