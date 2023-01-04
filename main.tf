@@ -52,12 +52,23 @@ resource "random_string" "cf_key" {
   special = false
 }
 
+
+resource "aws_cloudfront_origin_access_control" "oac" {
+  name                              = var.site_url # todo: the name might need to be different
+  description                       = "Lock down access to static site"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+
 resource "aws_cloudfront_distribution" "cdn" {
   price_class = var.cloudfront_price_class
   origin {
-    domain_name = aws_s3_bucket.website.website_endpoint
-    origin_id   = aws_s3_bucket.website.bucket
-    origin_path = var.origin_path
+    domain_name              = aws_s3_bucket.website.bucket_regional_domain_name
+    origin_id                = aws_s3_bucket.website.bucket
+    origin_path              = var.origin_path
+    origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
 
     custom_origin_config {
       http_port              = 80
@@ -172,61 +183,63 @@ resource "aws_s3_bucket" "website" {
   bucket        = var.s3_bucket_name
   tags          = var.tags
   force_destroy = var.force_destroy
+}
 
-  website {
-    index_document = var.index_doc
-    error_document = var.error_doc
-  }
+resource "aws_s3_bucket_lifecycle_configuration" "website_lifecycle" {
 
-  lifecycle_rule {
-    enabled                                = true
-    abort_incomplete_multipart_upload_days = 10
-    id                                     = "AutoAbortFailedMultipartUpload"
+  bucket = aws_s3_bucket.website.id
+  rule {
+    id     = "AutoAbortFailedMultipartUpload"
+    status = "Enabled"
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 10
+    }
 
     expiration {
       days                         = 0
       expired_object_delete_marker = false
     }
   }
-
-  dynamic "cors_rule" {
-    for_each = var.cors_rules
-    content {
-      allowed_headers = cors_rule.value["allowed_headers"]
-      allowed_methods = cors_rule.value["allowed_methods"]
-      allowed_origins = cors_rule.value["allowed_origins"]
-      expose_headers  = cors_rule.value["expose_headers"]
-      max_age_seconds = cors_rule.value["max_age_seconds"]
-    }
-  }
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
+}
+resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
+  bucket = aws_s3_bucket.website.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
     }
   }
 }
+resource "aws_s3_bucket_cors_configuration" "cors_config" {
+  for_each = var.cors_rules
+  bucket   = aws_s3_bucket.website.id
+  cors_rule {
+    allowed_headers = each.value["allowed_headers"]
+    allowed_methods = each.value["allowed_methods"]
+    allowed_origins = each.value["allowed_origins"]
+    expose_headers  = each.value["expose_headers"]
+    max_age_seconds = each.value["max_age_seconds"]
+  }
+}
+
 
 data "aws_iam_policy_document" "static_website" {
   statement {
-    sid       = "1"
-    actions   = ["s3:GetObject"]
+    actions = ["s3:GetObject"]
+
     resources = ["${aws_s3_bucket.website.arn}/*"]
 
     principals {
-      identifiers = ["*"]
-      type        = "AWS"
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
     }
-
     condition {
-      test     = "StringLike"
-      values   = [random_string.cf_key.result]
-      variable = "aws:Referer"
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.cdn.arn]
     }
   }
 }
+
 
 resource "aws_s3_bucket_policy" "static_website_read" {
   bucket = aws_s3_bucket.website.id
@@ -237,37 +250,39 @@ resource "aws_s3_bucket" "logging" {
   bucket        = "${var.s3_bucket_name}-access-logs"
   tags          = var.tags
   force_destroy = var.force_destroy
+}
 
-  lifecycle_rule {
-    id      = "logs"
-    enabled = true
-
-    transition {
-      storage_class = "STANDARD_IA"
-      days          = 120
+resource "aws_s3_bucket_lifecycle_configuration" "logging_bucket_lifecycle" {
+  bucket = aws_s3_bucket.logging.id
+  rule {
+    id     = "AutoAbortFailedMultipartUpload"
+    status = "Enabled"
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 10
     }
-
-    expiration {
-      days = 180
-    }
-  }
-
-  lifecycle_rule {
-    enabled                                = true
-    abort_incomplete_multipart_upload_days = 10
-    id                                     = "AutoAbortFailedMultipartUpload"
 
     expiration {
       days                         = 0
       expired_object_delete_marker = false
     }
   }
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
+  rule {
+    id     = "logs"
+    status = "Enabled"
+    transition {
+      storage_class = "STANDARD_IA"
+      days          = 120
+    }
+    expiration {
+      days = 180
+    }
+  }
+}
+resource "aws_s3_bucket_server_side_encryption_configuration" "logging_encryption" {
+  bucket = aws_s3_bucket.logging.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
     }
   }
 }
