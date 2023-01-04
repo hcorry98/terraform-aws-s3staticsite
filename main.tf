@@ -199,14 +199,17 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
   }
 }
 resource "aws_s3_bucket_cors_configuration" "cors_config" {
-  for_each = var.cors_rules
   bucket   = aws_s3_bucket.website.id
-  cors_rule {
-    allowed_headers = each.value["allowed_headers"]
-    allowed_methods = each.value["allowed_methods"]
-    allowed_origins = each.value["allowed_origins"]
-    expose_headers  = each.value["expose_headers"]
-    max_age_seconds = each.value["max_age_seconds"]
+
+  dynamic "cors_rule" {
+    for_each = var.cors_rules
+    content {
+      allowed_headers = cors_rule.value["allowed_headers"]
+      allowed_methods = cors_rule.value["allowed_methods"]
+      allowed_origins = cors_rule.value["allowed_origins"]
+      expose_headers  = cors_rule.value["expose_headers"]
+      max_age_seconds = cors_rule.value["max_age_seconds"]
+    }
   }
 }
 
