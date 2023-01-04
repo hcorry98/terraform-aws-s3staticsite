@@ -199,11 +199,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
   }
 }
 resource "aws_s3_bucket_cors_configuration" "cors_config" {
-  bucket   = aws_s3_bucket.website.id
-  cors_rule {
-    allowed_methods = []
-    allowed_origins = []
-  }
+  count  = length(var.cors_rules) > 1 ? 1 : 0
+  bucket = aws_s3_bucket.website.id
   dynamic "cors_rule" {
     for_each = var.cors_rules
     content {
