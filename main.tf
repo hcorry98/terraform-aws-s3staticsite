@@ -173,6 +173,14 @@ resource "aws_s3_bucket" "website" {
   force_destroy = var.force_destroy
 }
 
+resource "aws_s3_bucket_public_access_block" "block_public_access" {
+  bucket                  = aws_s3_bucket.website.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 resource "aws_s3_bucket_lifecycle_configuration" "website_lifecycle" {
 
   bucket = aws_s3_bucket.website.id
@@ -241,6 +249,14 @@ resource "aws_s3_bucket" "logging" {
   bucket        = "${var.s3_bucket_name}-access-logs"
   tags          = var.tags
   force_destroy = var.force_destroy
+}
+
+resource "aws_s3_bucket_public_access_block" "block_public_access_logging" {
+  bucket                  = aws_s3_bucket.logging.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "logging_bucket_lifecycle" {
