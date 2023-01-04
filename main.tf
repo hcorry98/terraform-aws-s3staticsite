@@ -3,7 +3,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 3.0"
+      version = ">= 4.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -47,12 +47,6 @@ resource "aws_route53_record" "cert_validation" {
   ttl      = 60
 }
 
-resource "random_string" "cf_key" {
-  length  = 32
-  special = false
-}
-
-
 resource "aws_cloudfront_origin_access_control" "oac" {
   name                              = var.site_url # todo: the name might need to be different
   description                       = "Lock down access to static site"
@@ -75,11 +69,6 @@ resource "aws_cloudfront_distribution" "cdn" {
       https_port             = 443
       origin_protocol_policy = "http-only"
       origin_ssl_protocols   = ["TLSv1.2"]
-    }
-
-    custom_header {
-      name  = "Referer"
-      value = random_string.cf_key.result
     }
   }
 
