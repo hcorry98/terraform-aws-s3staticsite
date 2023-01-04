@@ -36,20 +36,20 @@ module "s3_site_with_cors" {
     "repo"             = "https://github.com/byu-oit/terraform-module"
   }
   cors_rules = [
-#    {
-#      allowed_headers = ["*"]
-#      allowed_methods = ["PUT", "POST"]
-#      allowed_origins = ["https://s3-website-test.hashicorp.com"]
-#      expose_headers  = ["ETag"]
-#      max_age_seconds = 3000
-#    },
-#    {
-#      allowed_headers = ["*"]
-#      allowed_methods = ["PUT", "POST"]
-#      allowed_origins = ["https://example.com"]
-#      expose_headers  = ["ETag"]
-#      max_age_seconds = 3000
-#    }
+    {
+      allowed_headers = ["*"]
+      allowed_methods = ["PUT", "POST"]
+      allowed_origins = ["https://s3-website-test.hashicorp.com"]
+      expose_headers  = ["ETag"]
+      max_age_seconds = 3000
+    },
+    {
+      allowed_headers = ["*"]
+      allowed_methods = ["PUT", "POST"]
+      allowed_origins = ["https://example.com"]
+      expose_headers  = ["ETag"]
+      max_age_seconds = 3000
+    }
   ]
 }
 
