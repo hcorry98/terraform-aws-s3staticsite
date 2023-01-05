@@ -48,16 +48,13 @@ resource "aws_route53_record" "cert_validation" {
 }
 
 resource "aws_cloudfront_origin_access_control" "oac" {
-  name                              = var.site_url # todo: the name might need to be different
+  name                              = aws_s3_bucket.website.bucket
   description                       = "Lock down access to static site"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
 }
 
-#resource "aws_cloudfront_origin_access_identity" "oac" {
-#
-#}
 resource "aws_cloudfront_distribution" "cdn" {
   price_class = var.cloudfront_price_class
   origin {
@@ -65,10 +62,6 @@ resource "aws_cloudfront_distribution" "cdn" {
     origin_id                = aws_s3_bucket.website.bucket
     origin_path              = var.origin_path
     origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
-
-#    s3_origin_config {
-##      origin_access_identity = "" #aws_cloudfront_origin_access_identity.oac.cloudfront_access_identity_path
-#    }
   }
 
   comment             = "CDN for ${var.site_url}"
