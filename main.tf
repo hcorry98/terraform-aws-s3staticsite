@@ -66,9 +66,9 @@ resource "aws_cloudfront_distribution" "cdn" {
     origin_path              = var.origin_path
     origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
 
-    s3_origin_config {
-      origin_access_identity = "" #aws_cloudfront_origin_access_identity.oac.cloudfront_access_identity_path
-    }
+#    s3_origin_config {
+##      origin_access_identity = "" #aws_cloudfront_origin_access_identity.oac.cloudfront_access_identity_path
+#    }
   }
 
   comment             = "CDN for ${var.site_url}"
