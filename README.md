@@ -12,7 +12,7 @@ This Terraform module deploys an S3-hosted static site with HTTPS enabled.
 ## Usage
 ```hcl
 module "s3_site" {
-  source    = "github.com/byu-oit/terraform-aws-s3staticsite?ref=v6.1.0"
+  source    = "github.com/byu-oit/terraform-aws-s3staticsite?ref=v7.0.0"
   site_url       = "my-site.byu.edu"
   hosted_zone_id = "zoneid"
   s3_bucket_name = "bucket-name"
@@ -26,6 +26,10 @@ module "s3_site" {
 
 **First Terraform Error**
 ![First Terraform Error](readme/terraform-apply-1.png)
+
+## Requirements
+
+- AWS Provider version 4.48.0 or greater
 
 ## Inputs
 | Name                   | Type        | Description                                                                       | Default        |

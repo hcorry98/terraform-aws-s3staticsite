@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 3.0"
+      version = "~> 4.0"
     }
   }
 }
@@ -24,7 +24,7 @@ data "aws_route53_zone" "myotherapp" {
 }
 
 module "s3_site" {
-  source = "github.com/byu-oit/terraform-aws-s3staticsite?ref=v6.1.0"
+  source = "github.com/byu-oit/terraform-aws-s3staticsite?ref=v7.0.0"
   //source         = "../../"
   //site_url       = "myapp.byu.edu"
   site_url       = "myapp.byu-oit-terraform-dev.amazon.byu.edu"
