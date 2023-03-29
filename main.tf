@@ -172,13 +172,20 @@ resource "aws_s3_bucket" "website" {
   bucket        = var.s3_bucket_name
   tags          = var.tags
   force_destroy = var.force_destroy
+}
 
-
-  website {
-    index_document = var.index_doc
-    error_document = var.error_doc
+resource "aws_s3_bucket_website_configuration" "website_config" {
+  bucket         = aws_s3_bucket.website.id
+  index_document = {
+    suffix = var.index_doc
+  }
+  error_document {
+    key = var.error_doc
   }
 }
+
+resource "aws_s3_bucket_lifecycle_configuration" "website_lifecycle" {
+
   bucket = aws_s3_bucket.website.id
   rule {
     id     = "AutoAbortFailedMultipartUpload"
@@ -193,6 +200,7 @@ resource "aws_s3_bucket" "website" {
     }
   }
 }
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
   bucket = aws_s3_bucket.website.id
   rule {
