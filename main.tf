@@ -60,6 +60,18 @@ resource "aws_cloudfront_distribution" "cdn" {
     origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
   }
 
+  custom_error_response {
+    error_code         = 404
+    response_code      = 404
+    response_page_path = var.error_doc
+  }
+
+  custom_error_response {
+    error_code         = 403
+    response_code      = 403
+    response_page_path = var.error_doc
+  }
+
   comment             = "CDN for ${var.site_url}"
   enabled             = true
   is_ipv6_enabled     = true
