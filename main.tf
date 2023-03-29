@@ -60,6 +60,10 @@ resource "aws_cloudfront_distribution" "cdn" {
     origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
   }
 
+  # The custom error responses make SPA frameworks like Vue work.
+  # This is setup to be fairly similar to how the module previously
+  # worked with the s3 static website "error_doc" field
+  
   custom_error_response {
     error_code         = 404
     response_code      = 404
