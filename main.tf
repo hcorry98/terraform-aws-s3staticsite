@@ -55,26 +55,21 @@ resource "random_string" "cf_key" {
 resource "aws_cloudfront_distribution" "cdn" {
   price_class = var.cloudfront_price_class
   origin {
-    domain_name              = aws_s3_bucket.website.bucket_regional_domain_name
-    origin_id                = aws_s3_bucket.website.bucket
-    origin_path              = var.origin_path
-    origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
-  }
+    domain_name = aws_s3_bucket.website.website_endpoint
+    origin_id   = aws_s3_bucket.website.bucket
+    origin_path = var.origin_path
 
-  # The custom error responses make SPA frameworks like Vue work.
-  # This is setup to be fairly similar to how the module previously
-  # worked with the s3 static website "error_document" field
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
 
-  custom_error_response {
-    error_code         = 404
-    response_code      = 404
-    response_page_path = local.error_doc_path
-  }
-
-  custom_error_response {
-    error_code         = 403
-    response_code      = 404
-    response_page_path = local.error_doc_path
+    custom_header {
+      name  = "Referer"
+      value = random_string.cf_key.result
+    }
   }
 
   comment             = "CDN for ${var.site_url}"
@@ -179,14 +174,6 @@ resource "aws_s3_bucket" "website" {
   force_destroy = var.force_destroy
 }
 
-resource "aws_s3_bucket_public_access_block" "block_public_access" {
-  bucket                  = aws_s3_bucket.website.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
 resource "aws_s3_bucket_lifecycle_configuration" "website_lifecycle" {
 
   bucket = aws_s3_bucket.website.id
@@ -226,7 +213,6 @@ resource "aws_s3_bucket_cors_configuration" "cors_config" {
   }
 }
 
-
 data "aws_iam_policy_document" "static_website" {
   statement {
     sid       = "1"
@@ -255,14 +241,6 @@ resource "aws_s3_bucket" "logging" {
   bucket        = "${var.s3_bucket_name}-access-logs"
   tags          = var.tags
   force_destroy = var.force_destroy
-}
-
-resource "aws_s3_bucket_public_access_block" "block_public_access_logging" {
-  bucket                  = aws_s3_bucket.logging.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "logging_bucket_lifecycle" {
