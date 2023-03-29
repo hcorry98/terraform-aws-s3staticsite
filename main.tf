@@ -200,7 +200,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "website_lifecycle" {
     }
   }
 }
-
 resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
   bucket = aws_s3_bucket.website.id
   rule {
