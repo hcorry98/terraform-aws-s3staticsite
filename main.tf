@@ -175,7 +175,7 @@ resource "aws_s3_bucket" "website" {
 }
 
 resource "aws_s3_bucket_website_configuration" "website_config" {
-  bucket         = aws_s3_bucket.website.id
+  bucket = aws_s3_bucket.website.id
   index_document = {
     suffix = var.index_doc
   }
