@@ -5,17 +5,16 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 4.48.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.0"
+    }
   }
 }
 
 provider "aws" {
   alias  = "aws_n_va"
   region = "us-east-1"
-}
-
-locals {
-  # Make sure there is one leading slash to make a file name into a path
-  error_doc_path = "/${replace(var.error_doc, "/^//", "")}"
 }
 
 resource "aws_acm_certificate" "cert" {
@@ -48,12 +47,9 @@ resource "aws_route53_record" "cert_validation" {
   ttl      = 60
 }
 
-resource "aws_cloudfront_origin_access_control" "oac" {
-  name                              = aws_s3_bucket.website.bucket
-  description                       = "Lock down access to static site"
-  origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always"
-  signing_protocol                  = "sigv4"
+resource "random_string" "cf_key" {
+  length  = 32
+  special = false
 }
 
 resource "aws_cloudfront_distribution" "cdn" {
@@ -233,22 +229,22 @@ resource "aws_s3_bucket_cors_configuration" "cors_config" {
 
 data "aws_iam_policy_document" "static_website" {
   statement {
-    actions = ["s3:GetObject"]
-
+    sid       = "1"
+    actions   = ["s3:GetObject"]
     resources = ["${aws_s3_bucket.website.arn}/*"]
 
     principals {
-      type        = "Service"
-      identifiers = ["cloudfront.amazonaws.com"]
+      identifiers = ["*"]
+      type        = "AWS"
     }
+
     condition {
-      test     = "StringEquals"
-      variable = "AWS:SourceArn"
-      values   = [aws_cloudfront_distribution.cdn.arn]
+      test     = "StringLike"
+      values   = [random_string.cf_key.result]
+      variable = "aws:Referer"
     }
   }
 }
-
 
 resource "aws_s3_bucket_policy" "static_website_read" {
   bucket = aws_s3_bucket.website.id
