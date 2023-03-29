@@ -13,6 +13,11 @@ provider "aws" {
   region = "us-east-1"
 }
 
+locals {
+  # Make sure there is one leading slash to make a file name into a path
+  error_doc_path = "/${replace(var.error_doc, "/^//", "")}"
+}
+
 resource "aws_acm_certificate" "cert" {
   provider                  = aws.aws_n_va
   domain_name               = var.site_url
@@ -67,13 +72,13 @@ resource "aws_cloudfront_distribution" "cdn" {
   custom_error_response {
     error_code         = 404
     response_code      = 404
-    response_page_path = var.error_doc
+    response_page_path = local.error_doc_path
   }
 
   custom_error_response {
     error_code         = 403
-    response_code      = 403
-    response_page_path = var.error_doc
+    response_code      = 404
+    response_page_path = local.error_doc_path
   }
 
   comment             = "CDN for ${var.site_url}"
