@@ -62,7 +62,7 @@ resource "aws_cloudfront_distribution" "cdn" {
 
   # The custom error responses make SPA frameworks like Vue work.
   # This is setup to be fairly similar to how the module previously
-  # worked with the s3 static website "error_doc" field
+  # worked with the s3 static website "error_document" field
 
   custom_error_response {
     error_code         = 404
