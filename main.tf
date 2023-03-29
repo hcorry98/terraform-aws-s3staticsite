@@ -5,17 +5,16 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 4.48.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.0"
+    }
   }
 }
 
 provider "aws" {
   alias  = "aws_n_va"
   region = "us-east-1"
-}
-
-locals {
-  # Make sure there is one leading slash to make a file name into a path
-  error_doc_path = "/${replace(var.error_doc, "/^//", "")}"
 }
 
 resource "aws_acm_certificate" "cert" {
@@ -48,37 +47,29 @@ resource "aws_route53_record" "cert_validation" {
   ttl      = 60
 }
 
-resource "aws_cloudfront_origin_access_control" "oac" {
-  name                              = aws_s3_bucket.website.bucket
-  description                       = "Lock down access to static site"
-  origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always"
-  signing_protocol                  = "sigv4"
+resource "random_string" "cf_key" {
+  length  = 32
+  special = false
 }
 
 resource "aws_cloudfront_distribution" "cdn" {
   price_class = var.cloudfront_price_class
   origin {
-    domain_name              = aws_s3_bucket.website.bucket_regional_domain_name
-    origin_id                = aws_s3_bucket.website.bucket
-    origin_path              = var.origin_path
-    origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
-  }
+    domain_name = aws_s3_bucket.website.website_endpoint
+    origin_id   = aws_s3_bucket.website.bucket
+    origin_path = var.origin_path
 
-  # The custom error responses make SPA frameworks like Vue work.
-  # This is setup to be fairly similar to how the module previously
-  # worked with the s3 static website "error_document" field
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
 
-  custom_error_response {
-    error_code         = 404
-    response_code      = 404
-    response_page_path = local.error_doc_path
-  }
-
-  custom_error_response {
-    error_code         = 403
-    response_code      = 404
-    response_page_path = local.error_doc_path
+    custom_header {
+      name  = "Referer"
+      value = random_string.cf_key.result
+    }
   }
 
   comment             = "CDN for ${var.site_url}"
@@ -183,12 +174,14 @@ resource "aws_s3_bucket" "website" {
   force_destroy = var.force_destroy
 }
 
-resource "aws_s3_bucket_public_access_block" "block_public_access" {
-  bucket                  = aws_s3_bucket.website.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+resource "aws_s3_bucket_website_configuration" "website_config" {
+  bucket = aws_s3_bucket.website.id
+  index_document {
+    suffix = var.index_doc
+  }
+  error_document {
+    key = var.error_doc
+  }
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "website_lifecycle" {
@@ -230,25 +223,24 @@ resource "aws_s3_bucket_cors_configuration" "cors_config" {
   }
 }
 
-
 data "aws_iam_policy_document" "static_website" {
   statement {
-    actions = ["s3:GetObject"]
-
+    sid       = "1"
+    actions   = ["s3:GetObject"]
     resources = ["${aws_s3_bucket.website.arn}/*"]
 
     principals {
-      type        = "Service"
-      identifiers = ["cloudfront.amazonaws.com"]
+      identifiers = ["*"]
+      type        = "AWS"
     }
+
     condition {
-      test     = "StringEquals"
-      variable = "AWS:SourceArn"
-      values   = [aws_cloudfront_distribution.cdn.arn]
+      test     = "StringLike"
+      values   = [random_string.cf_key.result]
+      variable = "aws:Referer"
     }
   }
 }
-
 
 resource "aws_s3_bucket_policy" "static_website_read" {
   bucket = aws_s3_bucket.website.id
@@ -259,14 +251,6 @@ resource "aws_s3_bucket" "logging" {
   bucket        = "${var.s3_bucket_name}-access-logs"
   tags          = var.tags
   force_destroy = var.force_destroy
-}
-
-resource "aws_s3_bucket_public_access_block" "block_public_access_logging" {
-  bucket                  = aws_s3_bucket.logging.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "logging_bucket_lifecycle" {
