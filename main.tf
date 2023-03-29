@@ -15,7 +15,7 @@ provider "aws" {
 
 locals {
   # Make sure there is one leading slash to make a file name into a path
-  error_doc_path = "${replace(var.error_doc, "/^//", "")}/${var.error_doc}}"
+  error_doc_path = "${replace(var.error_doc, "/^//", "")}/${var.error_doc}"
 }
 
 resource "aws_acm_certificate" "cert" {
