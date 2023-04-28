@@ -52,7 +52,25 @@ resource "random_string" "cf_key" {
   special = false
 }
 
+# https://github.com/hashicorp/terraform-provider-aws/issues/30951#issuecomment-1523376909
+resource "aws_s3_bucket_public_access_block" "logging_bucket_public_enabled" {
+  bucket                  = aws_s3_bucket.logging.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_ownership_controls" "logging_bucket_ownership" {
+  depends_on = [aws_s3_bucket_public_access_block.logging_bucket_public_enabled]
+  bucket     = aws_s3_bucket.logging.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
 resource "aws_cloudfront_distribution" "cdn" {
+  depends_on  = [aws_s3_bucket_ownership_controls.logging_bucket_ownership]
   price_class = var.cloudfront_price_class
   origin {
     domain_name = aws_s3_bucket.website.website_endpoint
@@ -242,9 +260,27 @@ data "aws_iam_policy_document" "static_website" {
   }
 }
 
+# https://github.com/hashicorp/terraform-provider-aws/issues/30951#issuecomment-1523376909
+resource "aws_s3_bucket_public_access_block" "website_bucket_public_enabled" {
+  bucket                  = aws_s3_bucket.website.id
+  block_public_acls       = true
+  block_public_policy     = false
+  ignore_public_acls      = true
+  restrict_public_buckets = false
+}
+
+resource "aws_s3_bucket_ownership_controls" "website_bucket_ownership" {
+  depends_on = [aws_s3_bucket_public_access_block.website_bucket_public_enabled]
+  bucket     = aws_s3_bucket.website.id
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
 resource "aws_s3_bucket_policy" "static_website_read" {
-  bucket = aws_s3_bucket.website.id
-  policy = data.aws_iam_policy_document.static_website.json
+  depends_on = [aws_s3_bucket_ownership_controls.website_bucket_ownership]
+  bucket     = aws_s3_bucket.website.id
+  policy     = data.aws_iam_policy_document.static_website.json
 }
 
 resource "aws_s3_bucket" "logging" {
