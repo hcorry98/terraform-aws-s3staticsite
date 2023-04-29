@@ -73,7 +73,7 @@ resource "aws_cloudfront_distribution" "cdn" {
   depends_on  = [aws_s3_bucket_ownership_controls.logging_bucket_ownership]
   price_class = var.cloudfront_price_class
   origin {
-    domain_name = aws_s3_bucket.website.website_endpoint
+    domain_name = aws_s3_bucket_website_configuration.website_config.website_endpoint
     origin_id   = aws_s3_bucket.website.bucket
     origin_path = var.origin_path
 
