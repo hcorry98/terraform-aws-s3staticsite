@@ -4,8 +4,8 @@ This Terraform module deploys an S3-hosted static site with HTTPS enabled.
 
 ## Resources
 
-- S3 bucket to deploy files.
-- CloudFront distribution fronting the bucket to provide an SSL connection.
+- S3 bucket to deploy files
+- CloudFront distribution fronting the bucket to provide an SSL connection
 - Route 53 hosted zone for the BYU sub-domain with records to the CloudFront distribution
 - ACM certificate for the URL
 
@@ -22,10 +22,9 @@ module "s3_site" {
 }
 ```
 
-**Note**: Using this module will require you to run `terraform apply` twice. The first time it will create the Route 53 hosted zone, certificate in ACM, and S3 bucket for deployment. Then it will fail because AWS can't validate the certificate (you'll get an error message similar to the image below). You need to contact the network team to setup a record in QIP for your desired subdomain name pointing to the name servers of the hosted zone created by Terraform (you can find that information in the Route 53 console). After AWS has validated the certificate (you can find that information in the ACM console), run `terraform apply` again and it should succeed.
-
-**First Terraform Error**
-![First Terraform Error](readme/terraform-apply-1.png)
+> **Note**: Using this module will require you to run `terraform apply` twice. The first time it will create the Route 53 hosted zone, certificate in ACM, and S3 bucket for deployment. Then it will fail because AWS can't validate the certificate. You'll get an error message similar to the image below. Using [this form](https://support.byu.edu/it?id=sc_cat_item&sys_id=2f7a54251d635d005c130b6c83f2390a) or [Teams](https://teams.microsoft.com/l/channel/19%3a7221c80487644c478ceb3f3606d38b15%40thread.tacv2/CES%2520Network%2520Center?groupId=54688770-069e-42a2-9f77-07cbb0306d01&tenantId=c6fc6e9b-51fb-48a8-b779-9ee564b40413), ask the network team to set up a record in BlueCat for your desired subdomain name, pointing to the name servers of the hosted zone created by Terraform (which can be found in the Route 53 console). After AWS has validated the certificate (which you can see in the ACM console), run `terraform apply` again and it should succeed.
+> 
+> ![First Terraform Error: InvalidViewerCertificate](readme/terraform-apply-1.png)
 
 ## Requirements
 
