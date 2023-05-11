@@ -24,7 +24,7 @@ data "aws_route53_zone" "myotherapp" {
 }
 
 module "s3_site" {
-  source = "github.com/byu-oit/terraform-aws-s3staticsite?ref=v7.0.2"
+  source = "github.com/byu-oit/terraform-aws-s3staticsite?ref=v7.0.3"
   //source         = "../../"
   //site_url       = "myapp.byu.edu"
   site_url       = "myapp.byu-oit-terraform-dev.amazon.byu.edu"

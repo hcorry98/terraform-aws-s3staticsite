@@ -188,7 +188,7 @@ resource "aws_route53_record" "additional_4a" {
 
 resource "aws_s3_bucket" "website" {
   bucket        = var.s3_bucket_name
-  tags          = var.tags
+  tags          = merge({ "divvy-ignore-s3-public" = "true" }, var.tags)
   force_destroy = var.force_destroy
 }
 
