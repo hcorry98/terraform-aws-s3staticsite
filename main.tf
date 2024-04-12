@@ -41,12 +41,12 @@ resource "aws_route53_record" "cert_validation" {
       name   = dvo.resource_record_name
       record = dvo.resource_record_value
       type   = dvo.resource_record_type
-    }
+    } if !endswith(dvo.domain_name, var.site_url)
   }
   provider = aws.aws_n_va
   name     = each.value.name
   type     = each.value.type
-  zone_id  = endswith(each.key, var.site_url) ? var.hosted_zone_id : var.additional_domains[index(var.additional_domains.*.domain, each.key)].hosted_zone_id
+  zone_id  = (each.key == var.site_url) ? var.hosted_zone_id : var.additional_domains[index(var.additional_domains.*.domain, each.key)].hosted_zone_id
   records  = [each.value.record]
   ttl      = 60
 }
