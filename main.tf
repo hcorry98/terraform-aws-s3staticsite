@@ -41,7 +41,7 @@ resource "aws_route53_record" "cert_validation" {
       name   = dvo.resource_record_name
       record = dvo.resource_record_value
       type   = dvo.resource_record_type
-    } if !endswith(dvo.domain_name, var.site_url)
+    } if (dvo.domain_name == var.site_url) || (!endswith(dvo.domain_name, var.site_url))
   }
   provider = aws.aws_n_va
   name     = each.value.name
