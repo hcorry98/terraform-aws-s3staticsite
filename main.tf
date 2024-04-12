@@ -20,9 +20,13 @@ provider "aws" {
 resource "aws_acm_certificate" "cert" {
   provider                  = aws.aws_n_va
   domain_name               = var.site_url
-  subject_alternative_names = [for domain in var.additional_domains : domain.domain]
   validation_method         = "DNS"
   tags                      = var.tags
+
+  subject_alternative_names = concat(
+    [for subdomain in var.additional_subdomains : "${subdomain}.${var.site_url}"],
+    [for domain in var.additional_domains : domain.domain]
+  )
 }
 
 resource "aws_acm_certificate_validation" "cert" {
@@ -37,12 +41,12 @@ resource "aws_route53_record" "cert_validation" {
       name   = dvo.resource_record_name
       record = dvo.resource_record_value
       type   = dvo.resource_record_type
-    }
+    } if dvo.domain_name != "*.${var.site_url}"
   }
   provider = aws.aws_n_va
   name     = each.value.name
   type     = each.value.type
-  zone_id  = (each.key == var.site_url) ? var.hosted_zone_id : var.additional_domains[index(var.additional_domains.*.domain, each.key)].hosted_zone_id
+  zone_id  = endswith(each.key, var.site_url) ? var.hosted_zone_id : var.additional_domains[index(var.additional_domains.*.domain, each.key)].hosted_zone_id
   records  = [each.value.record]
   ttl      = 60
 }
