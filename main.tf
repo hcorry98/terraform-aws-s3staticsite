@@ -18,14 +18,15 @@ provider "aws" {
 }
 
 resource "aws_acm_certificate" "cert" {
-  provider                  = aws.aws_n_va
-  domain_name               = var.site_url
+  provider          = aws.aws_n_va
+  domain_name       = var.site_url
+  validation_method = "DNS"
+  tags              = var.tags
+
   subject_alternative_names = concat(
     [for subdomain in var.additional_subdomains : "${subdomain}.${var.site_url}"],
     [for domain in var.additional_domains : domain.domain]
-    )
-  validation_method         = "DNS"
-  tags                      = var.tags
+  )
 }
 
 resource "aws_acm_certificate_validation" "cert" {
@@ -97,12 +98,13 @@ resource "aws_cloudfront_distribution" "cdn" {
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = var.index_doc
-  aliases             = concat(
+  web_acl_id          = var.waf_acl_arn
+
+  aliases = concat(
     [var.site_url],
     [for subdomain in var.additional_subdomains : "${subdomain}.${var.site_url}"],
     [for domain in var.additional_domains : domain.domain]
-)
-  web_acl_id          = var.waf_acl_arn
+  )
 
   logging_config {
     bucket          = aws_s3_bucket.logging.bucket_domain_name
@@ -171,7 +173,7 @@ resource "aws_route53_record" "subdomain_cname" {
   type    = "CNAME"
   zone_id = var.hosted_zone_id
 
-  ttl = 300
+  ttl     = 300
   records = [var.site_url]
 }
 
