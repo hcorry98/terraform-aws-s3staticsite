@@ -27,6 +27,12 @@ variable "additional_domains" {
   description = "Additional domains to route to this site, and the associated hosted zones for cert validation."
 }
 
+variable "additional_subdomains" {
+  type        = list(string)
+  default     = []
+  description = "Additional subdomains to route to this site, and the associated hosted zones for cert validation."
+}
+
 variable "wait_for_deployment" {
   type        = bool
   description = "Define if Terraform should wait for the distribution to deploy before completing."

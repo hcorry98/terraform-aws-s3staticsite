@@ -20,7 +20,10 @@ provider "aws" {
 resource "aws_acm_certificate" "cert" {
   provider                  = aws.aws_n_va
   domain_name               = var.site_url
-  subject_alternative_names = [for domain in var.additional_domains : domain.domain]
+  subject_alternative_names = concat(
+    [for subdomain in var.additional_subdomains : "${subdomain}.${var.site_url}"],
+    [for domain in var.additional_domains : domain.domain]
+    )
   validation_method         = "DNS"
   tags                      = var.tags
 }
@@ -94,7 +97,11 @@ resource "aws_cloudfront_distribution" "cdn" {
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = var.index_doc
-  aliases             = concat([var.site_url], [for domain in var.additional_domains : domain.domain])
+  aliases             = concat(
+    [var.site_url],
+    [for subdomain in var.additional_subdomains : "${subdomain}.${var.site_url}"],
+    [for domain in var.additional_domains : domain.domain]
+)
   web_acl_id          = var.waf_acl_arn
 
   logging_config {
@@ -154,6 +161,18 @@ resource "aws_route53_record" "custom_url_4a" {
     name                   = aws_cloudfront_distribution.cdn.domain_name
     zone_id                = aws_cloudfront_distribution.cdn.hosted_zone_id
   }
+}
+
+resource "aws_route53_record" "subdomain_cname" {
+  for_each = {
+    for subdomain in var.additional_subdomains : subdomain => var.site_url
+  }
+  name    = each.key
+  type    = "CNAME"
+  zone_id = var.hosted_zone_id
+
+  ttl = 300
+  records = [var.site_url]
 }
 
 resource "aws_route53_record" "additional_a" {
