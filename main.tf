@@ -46,7 +46,7 @@ resource "aws_route53_record" "cert_validation" {
   provider = aws.aws_n_va
   name     = each.value.name
   type     = each.value.type
-  zone_id  = lookup(var.additional_domains, each.key, var.hosted_zone_id)
+  zone_id  = endswith(each.key, var.site_url) ? var.hosted_zone_id : var.additional_domains[index(var.additional_domains.*.domain, each.key)].hosted_zone_id
   records  = [each.value.record]
   ttl      = 60
 }
